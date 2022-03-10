@@ -39,7 +39,7 @@ def main(cfg, args):
     vis_name = '/{}-{}-{}'.format(cfg.CLASSIFIER.name, cfg.CLASSIFIER.mode,
                                   time.strftime("%Y-%m-%d-%H:%M:%S", time.localtime()))
     # log_dir = cfg.COMMON.logdir + vis_name
-    log_dir = args.output + 'save.pdparams'
+    log_dir = args.output
     callbacks = [LRSchedulerC(), VisualDLC(log_dir)]
 
     model.prepare(optim, loss=SupConLoss(temperature=cfg.COMMON.temp))
@@ -74,6 +74,6 @@ if __name__ == '__main__':
     # n_gpu = len(os.getenv("CUDA_VISIBLE_DEVICES", "").split(","))
     # print("num of GPUs:", n_gpu)
     if paddle.distributed.get_world_size() > 1:
-        paddle.distributed.spawn(main, args=(cfg,args,), nprocs=n_gpu)
+        paddle.distributed.spawn(main, args=(cfg,args,), nprocs=args.device)
     else:
         main(cfg,args)

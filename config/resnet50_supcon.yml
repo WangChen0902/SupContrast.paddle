@@ -6,7 +6,7 @@ CLASSIFIER:
 COMMON:
   workers: 4
   batch_size: 384
-  epochs: 300
+  epochs: 1
   temp: 0.1
   data_path: data/cifar-10-python.tar.gz
   logdir: logs

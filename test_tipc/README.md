@@ -32,7 +32,7 @@
 ```shell
 test_tipc/
 ├── configs/  # 配置文件目录
-    ├── SupContrast    # AlexNet模型的测试配置文件目录
+    ├── SupContrast    # SupContrast模型的测试配置文件目录
         ├── train_infer_python.txt      # 测试Linux GPU/CPU 基础训练推理测试的配置文件
 ├── test_train_inference_python.sh    # 测试python训练预测的主程序 (无需修改)
 ├── test_serving.sh                   # 测试serving部署预测的主程序 (无需修改)

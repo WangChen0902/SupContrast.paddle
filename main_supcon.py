@@ -14,11 +14,13 @@ from paddle.vision.datasets import Cifar10
 
 def get_args_parser():
     parser = argparse.ArgumentParser('Set PaddlePaddle cifar10 config', add_help=False)
-    parser.add_argument('-y', '--yaml', default='yamls/resnet50_supcon.yml', type=str)
+    parser.add_argument('-y', '--yaml', default='/paddle/code/SupContrast.paddle/config/resnet50_supcon.yml', type=str)
+    parser.add_argument('--device', default='gpu', type=str)
+    parser.add_argument('--output', default='output', type=str)
     return parser
 
 
-def main(cfg):
+def main(cfg, args):
     paddle.seed(cfg.COMMON.seed)
     random.seed(cfg.COMMON.seed)
     np.random.seed(cfg.COMMON.seed)
@@ -36,7 +38,8 @@ def main(cfg):
     test_set = Cifar10(cfg.COMMON.data_path, mode='test', transform=TwoCropTransform(test_transforms))
     vis_name = '/{}-{}-{}'.format(cfg.CLASSIFIER.name, cfg.CLASSIFIER.mode,
                                   time.strftime("%Y-%m-%d-%H:%M:%S", time.localtime()))
-    log_dir = cfg.COMMON.logdir + vis_name
+    # log_dir = cfg.COMMON.logdir + vis_name
+    log_dir = args.output + 'save.pdparams'
     callbacks = [LRSchedulerC(), VisualDLC(log_dir)]
 
     model.prepare(optim, loss=SupConLoss(temperature=cfg.COMMON.temp))
@@ -67,9 +70,10 @@ if __name__ == '__main__':
     cfg = CN.load_cfg(args.yaml)
     cfg.freeze()
     print(cfg)
-    n_gpu = len(os.getenv("CUDA_VISIBLE_DEVICES", "").split(","))
-    print("num of GPUs:", n_gpu)
-    if n_gpu > 1:
-        paddle.distributed.spawn(main, args=(cfg,), nprocs=n_gpu)
+    device = paddle.set_device(args.device)
+    # n_gpu = len(os.getenv("CUDA_VISIBLE_DEVICES", "").split(","))
+    # print("num of GPUs:", n_gpu)
+    if paddle.distributed.get_world_size() > 1:
+        paddle.distributed.spawn(main, args=(cfg,args,), nprocs=n_gpu)
     else:
-        main(cfg)
+        main(cfg,args)

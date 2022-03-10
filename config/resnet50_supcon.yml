@@ -13,7 +13,7 @@ COMMON:
   save_freq: 20
   verbose: 1
   seed: 2021
- continue_from: logs/resnet50-supcon-final/final
+  # continue_from: logs/resnet50-supcon-final/final
 OPTIMIZER:
   name: momentum
   params:

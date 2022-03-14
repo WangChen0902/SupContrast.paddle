@@ -104,7 +104,7 @@ class InferenceEngine(object):
 
         return predictor, config, input_tensor, output_tensor
 
-    def preprocess(self, img_path):
+    def preprocess(self, img_path, img_size):
         """preprocess
 
         Preprocess to the input.
@@ -118,9 +118,10 @@ class InferenceEngine(object):
         with open(img_path, "rb") as f:
             img = Image.open(f)
             img = img.convert("RGB")
-        img = transforms.to_tensor(img)
-        img = val_transforms(img).numpy()
-        img = np.expand_dims(img, axis=0)
+        # img = transforms.to_tensor(img)
+        img = transforms.Resize(size=(img_size, img_size))(img)
+        img = val_transforms(img)
+        img = np.expand_dims(img.numpy(), axis=0)
         return img
 
     def postprocess(self, x):
@@ -176,7 +177,7 @@ def get_args(add_help=True):
 
     parser.add_argument(
         "--resize-size", default=256, type=int, help="resize_size")
-    parser.add_argument("--crop-size", default=224, type=int, help="crop_szie")
+    parser.add_argument("--crop-size", default=32, type=int, help="crop_szie")
     parser.add_argument("--img-path", default="./images/supcon_test.png")
 
     parser.add_argument(
@@ -219,7 +220,7 @@ def infer_main(args):
         autolog.times.start()
 
     # preprocess
-    img = inference_engine.preprocess(args.img_path)
+    img = inference_engine.preprocess(args.img_path, args.crop_size)
 
     if args.benchmark:
         autolog.times.stamp()

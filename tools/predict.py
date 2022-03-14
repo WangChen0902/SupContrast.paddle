@@ -16,16 +16,18 @@ import paddle
 from paddle.nn import CrossEntropyLoss
 from paddle.metric import Accuracy
 from paddle.vision.datasets import Cifar10
-
+from PIL import Image
+import paddle.vision.transforms as transforms
 
 def get_args_parser():
     parser = argparse.ArgumentParser('Set PaddlePaddle cifar10 config', add_help=False)
     parser.add_argument('-y', '--yaml', default='config/resnet50_linear.yml', type=str)
+    parser.add_argument('--img-path', default='./images/supcon_test.png', type=str)
     parser.add_argument('--test', action='store_true', default=True, help='test only')
     return parser
 
 
-def main(cfg):
+def main(cfg, img_path):
     paddle.seed(cfg.COMMON.seed)
     random.seed(cfg.COMMON.seed)
     np.random.seed(cfg.COMMON.seed)
@@ -39,8 +41,8 @@ def main(cfg):
     clip = paddle.nn.ClipGradByNorm(clip_norm=1)
     optim = build_optim(cfg.OPTIMIZER, parameters=net.parameters(), learning_rate=lrs, grad_clip=clip)
     train_transforms, val_transforms = build_transform()
-    train_set = Cifar10(cfg.COMMON.data_path, mode='train', transform=train_transforms)
-    test_set = Cifar10(cfg.COMMON.data_path, mode='test', transform=val_transforms)
+    # train_set = Cifar10(cfg.COMMON.data_path, mode='train', transform=train_transforms)
+    # test_set = Cifar10(cfg.COMMON.data_path, mode='test', transform=val_transforms)
     vis_name = '/{}-{}-{}'.format(cfg.CLASSIFIER.name, cfg.CLASSIFIER.mode,
                                   time.strftime("%Y-%m-%d-%H:%M:%S", time.localtime()))
     log_dir = cfg.COMMON.logdir + vis_name
@@ -64,10 +66,22 @@ def main(cfg):
         model.load(cfg.COMMON.continue_from)
 
     if cfg.COMMON.test_only:
-        label, data = next(enumerate(test_set))
-        data_tensor, data_array = data
-        predict = model.predict_batch([data_tensor.unsqueeze(0)])
+        # label, data = next(enumerate(test_set))
+        train_transforms, val_transforms = build_transform()
+        with open(img_path, "rb") as f:
+            img = Image.open(f)
+            img = img.convert("RGB")
+        # img = transforms.to_tensor(img)
+        img = transforms.Resize(size=(32, 32))(img)
+        img = val_transforms(img).unsqueeze(0)
+        print(img.shape)
+        print(img.mean())
+        # img = np.expand_dims(img, axis=0)
+        # data_tensor, data_array = data
+        predict = paddle.to_tensor(model.predict_batch(img))
+        print(predict)
         class_id = predict[0].argmax()
+        predict = paddle.nn.functional.softmax(predict[0])
         prob = predict[0][0][class_id]
         print("class_id: {}, prob: {}".format(class_id, prob))
     else:
@@ -95,6 +109,6 @@ if __name__ == '__main__':
     n_gpu = len(os.getenv("CUDA_VISIBLE_DEVICES", "").split(","))
     print("num of GPUs:", n_gpu)
     if n_gpu > 1:
-        paddle.distributed.spawn(main, args=(cfg,), nprocs=n_gpu)
+        paddle.distributed.spawn(main, args=(cfg, args.img_path), nprocs=n_gpu)
     else:
-        main(cfg)
+        main(cfg, args.img_path)

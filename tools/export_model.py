@@ -86,6 +86,7 @@ def export(args):
         k = k.replace("encoder.", "")
         new_state_dict[k] = v
     model.set_state_dict(new_state_dict)
+    model = nn.Sequential(model, nn.Softmax(axis=-1))
     model.eval()
 
     # decorate model with jit.save
